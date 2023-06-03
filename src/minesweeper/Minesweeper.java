@@ -48,12 +48,12 @@ public class Minesweeper extends JFrame {
 	 */
 	private void addLevelOptionButtons() {
 		if (System.getProperty("os.name").startsWith("Windows")) {
-			addButton("BEGINNER", "#5CE62E", 181, 242, 9, 9, 10, 14);
+			addButton("BEGINNER", "#5CE62E", 220, 280, 9, 9, 10, 14);
 			addButton("INTERMEDIATE", "#FFD633", 314, 384, 16, 16, 40, 60);
 			addButton("EXPERT", "#FF2A2A", 580, 384, 30, 16, 99, 148);
 		}
 		else {
-			addButton("BEGINNER", "#5CE62E", 184, 247, 9, 9, 10, 14);
+			addButton("BEGINNER", "#5CE62E", 220, 280, 9, 9, 10, 14);
 			addButton("INTERMEDIATE", "#FFD633", 324, 387, 16, 16, 40, 61);
 			addButton("EXPERT", "#FF2A2A", 604, 387, 30, 16, 99, 154);
 		}

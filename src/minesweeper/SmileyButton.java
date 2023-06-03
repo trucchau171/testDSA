@@ -21,6 +21,7 @@ public class SmileyButton extends JButton {
 
 		setBackground(null);
 		setBorder(SMILEY_BORDER);
+		setActionCommand("smile");
 		addActionListener(newGameListener);
 	}
 

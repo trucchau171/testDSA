@@ -7,6 +7,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Stack;
@@ -36,6 +37,9 @@ public class Board extends JFrame {
 
 	private TopPanel topPanel;
 
+	private Stack<AbstractMap.SimpleEntry<Integer, AbstractMap.SimpleEntry<Integer, String>>> gameSteps = new Stack();
+	private int stepCnt = 1;
+
 	private MouseAdapter cellMouseAdapter = new MouseAdapter() {
 		@Override
 		public void mousePressed(MouseEvent e) {
@@ -61,7 +65,9 @@ public class Board extends JFrame {
 			}
 
 			if (cell.isUnlocked()) {
+				System.out.println("unlock");
 				if (SwingUtilities.isRightMouseButton(e) && SwingUtilities.isLeftMouseButton(e)) {
+					System.out.println("lar");
 					rightAndLeftClick(cell);
 				}
 			}
@@ -101,17 +107,31 @@ public class Board extends JFrame {
 		final ActionListener newGameListener = new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent event) {
-				if (!firstClick) {
-					firstClick = true;
-					gameOver = false;
-					refreshCells();
-					topPanel.reset();
-					repaint();
+
+				if (event.getActionCommand().equals("smile")) {
+					System.out.println("smile");
+					if (!firstClick) {
+						firstClick = true;
+						gameOver = false;
+						refreshCells();
+						topPanel.reset();
+						repaint();
+					}
 				}
+				if (event.getActionCommand().equals("undo")) {
+					System.out.println("undo");
+					try {
+						undo();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+
 			}
 		};
 
 		topPanel = new TopPanel(numBombs, gap, newGameListener);
+//		topPanel.setLayout(null);
 		add(topPanel, BorderLayout.NORTH);
 	}
 
@@ -180,7 +200,8 @@ public class Board extends JFrame {
 			}
 
 		} while (firstClick);
-
+		gameSteps.push(new AbstractMap.SimpleEntry<>(stepCnt++, new AbstractMap.SimpleEntry<>(cell.getCol() * cols + cell.getRow(), "cover"))); //add steps
+		topPanel.undoButton.setEnabled(true);
 		topPanel.startTime();
 
 		return cell;
@@ -190,11 +211,13 @@ public class Board extends JFrame {
 		if (cell.isFlagged()) {
 			cell.unflag();
 			topPanel.incrementBombs();
+			gameSteps.push(new AbstractMap.SimpleEntry<>(stepCnt++, new AbstractMap.SimpleEntry<>(cell.getCol() * cols + cell.getRow(), "flag"))); //add steps
 		}
 		else {
 			try {
 				topPanel.decrementBombs();
 				cell.flag();
+				gameSteps.push(new AbstractMap.SimpleEntry<>(stepCnt++, new AbstractMap.SimpleEntry<>(cell.getCol() * cols + cell.getRow(), "cover"))); //add steps
 			}
 			catch (Exception e) {
 				System.out.println(e.getMessage());
@@ -216,6 +239,7 @@ public class Board extends JFrame {
 				else {
 					cell.unlock();
 				}
+				gameSteps.push(new AbstractMap.SimpleEntry<>(stepCnt++, new AbstractMap.SimpleEntry<>(cell.getCol() * cols + cell.getRow(), "cover"))); //add steps
 				numCellsToUncover--;
 				if (numCellsToUncover == 0) {
 					winGame();
@@ -228,8 +252,11 @@ public class Board extends JFrame {
 		final int row = cell.getRow();
 		final int col = cell.getCol();
 
+		System.out.println("lar " + row + " " + col + getNumFlagNeighbors(col, row) + " _ " + cell.getNumBombNeighbors());
+
 		if (getNumFlagNeighbors(col, row) == cell.getNumBombNeighbors()) {
 			unlockNeighbors(cell);
+			stepCnt++;
 			if (numCellsToUncover == 0) {
 				winGame();
 			}
@@ -314,7 +341,39 @@ public class Board extends JFrame {
 
 						if (!thisCell.isUnlocked() && !thisCell.isFlagged()) {
 							thisCell.unlock();
+							gameSteps.push(new AbstractMap.SimpleEntry<>(stepCnt, new AbstractMap.SimpleEntry<>(thisCell.getCol() * cols + thisCell.getRow(), "cover"))); //add steps
 							numCellsToUncover--;
+							if (thisCell.getNumBombNeighbors() == 0) {
+								stack.push(thisCell);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	private void lockNeighbors(Cell currentCell) {
+		final Stack<Cell> stack = new Stack<Cell>();
+		stack.push(currentCell);
+		while (!stack.isEmpty()) {
+			final Cell cell = stack.pop();
+			final int row = cell.getRow();
+			final int col = cell.getCol();
+			cell.lock();
+
+			// check all neighbors
+			for (int i = -1; i < 2; i++) {
+				for (int j = -1; j < 2; j++) {
+
+					// i != 0 || j != 0 - skip center box
+					if (isCell(col + j, row + i) && (i != 0 || j != 0)) {
+
+						final Cell thisCell = cells[col + j][row + i];
+
+						if (thisCell.isUnlocked()) {
+							thisCell.lock();
+							numCellsToUncover++;
 							if (thisCell.getNumBombNeighbors() == 0) {
 								stack.push(thisCell);
 							}
@@ -345,7 +404,41 @@ public class Board extends JFrame {
 		return row >= 0 && row < rows && col >= 0 && col < cols;
 	}
 
+	private void undo() throws Exception {
+		while (!gameSteps.empty()) {
+			AbstractMap.SimpleEntry<Integer, AbstractMap.SimpleEntry<Integer, String>> ele = gameSteps.pop();//gets most recent game step
+			//corresponding cell to the game step
+			int order = ele.getKey();
+			if (order != stepCnt - 1) {
+				gameSteps.push(ele);
+				break;
+			}
+			AbstractMap.SimpleEntry<Integer, String> item = ele.getValue();
+			int i = item.getKey();
+			String stage = item.getValue();
+			Cell cell = cells[i / cols][i % cols];
+
+			//Handle flagged cells situation, which are covered
+			if (stage.equals("flag")) {
+				cell.flag();
+				topPanel.bombsLeftDisplay.decrement();
+			}
+			else if (cell.isFlagged()) {
+				cell.unflag();
+				topPanel.bombsLeftDisplay.increment();
+			}
+			else {
+				cell.lock();
+				numCellsToUncover++;
+			}
+
+			repaint();
+		}
+		stepCnt--;
+	}
+
 	private void endGame() {
+		gameSteps.clear();
 		gameOver = true;
 		topPanel.shutDownTime();
 	}

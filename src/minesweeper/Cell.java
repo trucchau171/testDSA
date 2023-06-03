@@ -1,6 +1,6 @@
 package minesweeper;
 
-import java.awt.Color;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -88,6 +88,14 @@ public class Cell extends JButton {
 		}
 
 		setText(String.valueOf(numBombNeighbors));
+	}
+
+	public void lock() {
+		setBackground(Color.LIGHT_GRAY);
+		setBorder(LOCKED_BORDER);
+		unlocked = false;
+		setText("");
+		System.out.println("lock");
 	}
 
 	public void flag() {

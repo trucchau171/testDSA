@@ -1,13 +1,12 @@
 package minesweeper;
 
-import java.awt.Color;
-import java.awt.FlowLayout;
+import java.awt.*;
 import java.awt.event.ActionListener;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import javax.swing.JPanel;
+import javax.swing.*;
 import javax.swing.border.BevelBorder;
 
 public class TopPanel extends JPanel {
@@ -17,9 +16,11 @@ public class TopPanel extends JPanel {
 
 	private float colorNum = 0;
 
-	private final BombsDisplay bombsLeftDisplay;
+	public final BombsDisplay bombsLeftDisplay;
 	private final TimerDisplay timerDisplay;
 	private final SmileyButton smileyButton;
+	public final UndoButton undoButton;
+
 
 	private ScheduledExecutorService executor;
 
@@ -43,13 +44,18 @@ public class TopPanel extends JPanel {
 		colorNum = 0;
 
 		bombsLeftDisplay = new BombsDisplay(numBombs, colorNum);
-		add(bombsLeftDisplay);
+		this.add(bombsLeftDisplay);
 
 		smileyButton = new SmileyButton(newGameListener);
-		add(smileyButton);
+		this.add(smileyButton);
 
 		timerDisplay = new TimerDisplay(colorNum);
-		add(timerDisplay);
+		this.add(timerDisplay);
+
+		undoButton = new UndoButton(newGameListener);
+		this.add(undoButton);
+
+
 	}
 
 	private void initializePanelDesign(int gap) {
@@ -57,7 +63,7 @@ public class TopPanel extends JPanel {
 		setLayout(new FlowLayout(FlowLayout.CENTER, gap, 3));
 
 		// add breaks - empty spaces in flow layout
-		// topPanel.setLayout(new GridLayout(1, 7));
+		this.setLayout(new GridLayout(1, 7));
 
 		setBorder(TOP_PANEL_BORDER);
 		setBackground(Color.LIGHT_GRAY);
